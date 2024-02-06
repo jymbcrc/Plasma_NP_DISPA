@@ -1,0 +1,104 @@
+
+library(fmsb)
+
+# Create data: note in High school for Jonathan:
+#data <- read.csv("F:\\Seer_project\\R_data\\radar2.csv", stringsAsFactors = FALSE,check.names = FALSE,row.names = 1)
+data <- read.csv("F:\\Seer_project\\R_data\\radar3.csv", stringsAsFactors = FALSE,check.names = FALSE,row.names = 1)   # minmax scaler
+
+# get df for each NP and DD
+row_dd  <- data['DD', , drop=FALSE]
+row_np1 <- data['NP1', , drop=FALSE]
+row_np2 <- data['NP2', , drop=FALSE]
+row_np3 <- data['NP3', , drop=FALSE]
+row_np4 <- data['NP4', , drop=FALSE]
+row_np5 <- data['NP5', , drop=FALSE]
+
+#class(row_dd)
+#maxvalue = ceiling(max(abs(row_dd)))
+
+#colnames(data) <- c("math" , "english" , "biology" , "music" , "R-coding", "data-viz" , "french" , "physic", "statistic", "sport" )
+
+# To use the fmsb package, I have to add 2 lines to the dataframe: the max and min of each topic to show on the plot!
+row_dd  <- rbind(rep(2,6) , rep(-2,6) , row_dd)
+row_np1  <- rbind(rep(2,6) , rep(-2,6) , row_np1)
+row_np2  <- rbind(rep(2,6) , rep(-2,6) , row_np2)
+row_np3  <- rbind(rep(2,6) , rep(-2,6) , row_np3)
+row_np4  <- rbind(rep(2,6) , rep(-2,6) , row_np4)
+row_np5  <- rbind(rep(2,6) , rep(-2,6) , row_np5)
+
+row_dd 
+
+# Custom the radarChart dd!
+
+svg("F:/Seer_project/figures/Radar/dd.svg")
+radarchart( row_dd  , axistype=1, seg = 4,
+            #custom polygon
+            pcol=grDevices::adjustcolor("#2F2C27", alpha.f = 0.9) , 
+            pfcol=grDevices::adjustcolor("#2F2C27", alpha.f = 0.5) , plwd=4, 
+            #custom the grid
+            cglcol="grey", cglty=1, axislabcol="black", caxislabels=seq(-2,2,1), cglwd=3,
+            #custom labels
+            vlcex=2)
+dev.off()
+
+# Custom the radarChart np1!
+svg("F:/Seer_project/figures/Radar/np1.svg")
+radarchart( row_np1  , axistype=1, seg = 4,
+            #custom polygon
+            pcol=rgb(0.2,0.5,0.5,0.9) , pfcol=rgb(0.2,0.5,0.5,0.5) , plwd=4, 
+            #custom the grid
+            cglcol="grey", cglty=1, axislabcol="black", caxislabels=seq(-2,2,1), cglwd=3,
+            #custom labels
+            vlcex=2)
+dev.off()
+
+# Custom the radarChart np2!
+svg("F:/Seer_project/figures/Radar/np2.svg")
+radarchart( row_np2  , axistype=1, seg = 4,
+            #custom polygon
+            pcol=grDevices::adjustcolor("#8757A6", alpha.f = 0.9) , 
+            pfcol=grDevices::adjustcolor("#8757A6", alpha.f = 0.5) , plwd=4, 
+            #custom the grid
+            cglcol="grey", cglty=1, axislabcol="black", caxislabels=seq(-2,2,1), cglwd=3,
+            #custom labels
+            vlcex=2)
+dev.off()
+
+
+# Custom the radarChart np3!
+svg("F:/Seer_project/figures/Radar/np3.svg")
+radarchart( row_np3  , axistype=1, seg = 4,
+            #custom polygon
+            pcol=grDevices::adjustcolor("#9BBDE1", alpha.f = 0.9) , 
+            pfcol=grDevices::adjustcolor("#9BBDE1", alpha.f = 0.5) , plwd=4, 
+            #custom the grid
+            cglcol="grey", cglty=1, axislabcol="black", caxislabels=seq(-2,2,1), cglwd=3,
+            #custom labels
+            vlcex=2)
+dev.off()
+
+
+# Custom the radarChart np4!
+svg("F:/Seer_project/figures/Radar/np4.svg")
+radarchart( row_np4  , axistype=1, seg = 4,
+            #custom polygon
+            pcol=grDevices::adjustcolor("#B38A35", alpha.f = 0.9) , 
+            pfcol=grDevices::adjustcolor("#B38A35", alpha.f = 0.5) , plwd=4, 
+            #custom the grid
+            cglcol="grey", cglty=1, axislabcol="black", caxislabels=seq(-2,2,1), cglwd=3,
+            #custom labels
+            vlcex=2)
+dev.off()
+
+
+# Custom the radarChart np5!
+svg("F:/Seer_project/figures/Radar/np5.svg")
+radarchart( row_np5  , axistype=1, seg = 4,
+            #custom polygon
+            pcol=grDevices::adjustcolor("#C25358", alpha.f = 0.9) , 
+            pfcol=grDevices::adjustcolor("#C25358", alpha.f = 0.5) , plwd=4, 
+            #custom the grid
+            cglcol="grey", cglty=1, axislabcol="black", caxislabels=seq(-2,2,1), cglwd=3,
+            #custom labels
+            vlcex=2)
+dev.off()
