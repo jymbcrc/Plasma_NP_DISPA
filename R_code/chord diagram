@@ -1,1 +1,78 @@
 
+
+# library
+library(circlize)
+
+
+df_chord <- read.csv("F:\\Seer_project\\R_data\\chord_diagram_biomarkers_gene2.csv", stringsAsFactors = FALSE,row.names = 1)
+
+class(df_chord)
+
+df_chord 
+mat_chord <- as.matrix(df_chord)
+
+#class(mat_chord)
+df = data.frame(from = rep(rownames(df_chord), times = ncol(df_chord)),
+                to = rep(colnames(df_chord), each = nrow(df_chord)),
+                value = as.vector(df_chord),
+                stringsAsFactors = FALSE)
+df
+
+#circos.par(start.degree = 0)
+
+chordDiagram(mat_chord)
+circos.clear()
+
+chordDiagram(mat_chord, annotationTrack = c("grid", "axis"), 
+             preAllocateTracks = list(track.height = max(strwidth(unlist(dimnames(mat_chord))))))
+# we go back to the first track and customize sector labels
+circos.track(track.index = 1, panel.fun = function(x, y) {
+
+  circos.text(CELL_META$xcenter, CELL_META$ylim[1], CELL_META$sector.index, 
+              facing = "clockwise", 
+              niceFacing = TRUE,
+              font = 0.8 , 
+              cex = 0.8,
+              adj = c(-0.35, 0.6))},   
+bg.border = NA)
+
+circos.clear()
+
+
+
+
+
+
+
+
+
+
+
+axis_param <- list(axis.labels.cex = 0.7, axis.labels.col = "blue")
+
+chordDiagram(mat_chord, annotationTrack = c("grid","axis"), 
+             annotationTrackParam = list(axis = axis_param),
+             preAllocateTracks = list(track.height = max(strwidth(unlist(dimnames(mat_chord))))))
+# we go back to the first track and customize sector labels
+
+
+
+circos.track(track.index = 1, panel.fun = function(x, y) {
+  
+  circos.text(CELL_META$xcenter, CELL_META$ylim[1], CELL_META$sector.index, 
+              facing = "clockwise", 
+              niceFacing = TRUE,
+              font = 0.9 , 
+              cex = 0.9,
+              adj = c(-0.35, 0.6))},   
+  bg.border = NA)
+
+circos.clear()
+circos.track(track.index = 1, panel.fun = function(x, y) {
+  circos.axis(h = "bottom", 
+              labels.cex = 0.7,    # Font size for the tick labels              
+              labels.font = 1,     # Bold font for the tick labels
+              labels.col = "black")  # Font color for the tick labels
+})
+
+circos.clear()
