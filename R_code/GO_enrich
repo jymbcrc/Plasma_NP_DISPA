@@ -1,0 +1,470 @@
+
+#BiocManager::install(c("biomaRt", "clusterProfiler"))
+library(biomaRt)
+#install.packages("clusterProfiler")
+library(clusterProfiler)
+library(org.Hs.eg.db)
+library(ggplot2)
+df <- read.csv("F:\\Seer_project\\R_data\\pro_id_targeted.csv", stringsAsFactors = FALSE)
+df_scout <- read.csv("F:\\Seer_project\\R_data\\pro_id_scout.csv", stringsAsFactors = FALSE)
+df_lc_scout <- read.csv("F:\\Seer_project\\R_data\\scout_LC.csv", stringsAsFactors = FALSE)
+
+
+# Extract the UniProt IDs into a vector
+uniprot_ids_np <- df$np_pro
+uniprot_ids_dd <- df$dd_pro
+uniprot_ids_npscout <- df_scout$np_pro
+uniprot_ids_ddscout <- df_scout$dd_pro
+
+uniprot_ids_DISPA <- df_lc_scout$DISPA
+uniprot_ids_LC <- df_lc_scout$LC
+
+
+
+listMarts() # to choose a suitable database
+ensembl <- useMart("ensembl", dataset="hsapiens_gene_ensembl")
+
+
+gene_symbols_np <- getBM(attributes=c('uniprotswissprot', 'hgnc_symbol'), 
+                      filters = 'uniprotswissprot', 
+                      values = uniprot_ids_np, 
+                      mart = ensembl)
+gene_symbols_dd <- getBM(attributes=c('uniprotswissprot', 'hgnc_symbol'), 
+                         filters = 'uniprotswissprot', 
+                         values = uniprot_ids_dd, 
+                         mart = ensembl)
+gene_symbols_npscout <- getBM(attributes=c('uniprotswissprot', 'hgnc_symbol'), 
+                         filters = 'uniprotswissprot', 
+                         values = uniprot_ids_npscout, 
+                         mart = ensembl)
+gene_symbols_ddscout <- getBM(attributes=c('uniprotswissprot', 'hgnc_symbol'), 
+                         filters = 'uniprotswissprot', 
+                         values = uniprot_ids_ddscout, 
+                         mart = ensembl)
+gene_symbols_DISPA <- getBM(attributes=c('uniprotswissprot', 'hgnc_symbol'), 
+                              filters = 'uniprotswissprot', 
+                              values = uniprot_ids_DISPA , 
+                              mart = ensembl)
+gene_symbols_LC <- getBM(attributes=c('uniprotswissprot', 'hgnc_symbol'), 
+                              filters = 'uniprotswissprot', 
+                              values = uniprot_ids_LC, 
+                              mart = ensembl)
+
+gene_symbols1<-gene_symbols_DISPA
+gene_symbols2<-gene_symbols_LC
+
+# Extract only the Entrez IDs to a vector
+symbols_vector1 <- unname(gene_symbols1$hgnc_symbol)
+symbols_vector2 <- unname(gene_symbols2$hgnc_symbol)
+
+# Convert the vector to a list
+symbols_list1 <- as.list(symbols_vector1)
+symbols_list2 <- as.list(symbols_vector2)
+
+
+nested_list_symbols <- list(DISPA=symbols_list1, LC=symbols_list2)
+str(nested_list_symbols)
+
+transformed_list_symbols <- lapply(nested_list_symbols, unlist)
+str(transformed_list_symbols)
+
+lapply(transformed_list_symbols, head)
+
+result2 <- compareCluster(transformed_list_symbols,
+                          fun="enrichGO", 
+                          OrgDb="org.Hs.eg.db", 
+                          ont="BP", 
+                          pAdjustMethod="BH", 
+                          pvalueCutoff=0.05, 
+                          qvalueCutoff=0.1, 
+                          universe=NULL,
+                          keyType="SYMBOL")
+
+# Visualization of cluster map GO
+
+dotplot(result2,  font.size=12, showCategory=8) +
+  theme(axis.title=element_text(size=14), 
+        title=element_text(size=16))
+
+#GO Enrichment analysis of NPs from targeted methods
+ego_npscout <- enrichGO(gene         = gene_symbols_npscout$hgnc_symbol,
+                   OrgDb         = org.Hs.eg.db,
+                   keyType       = "SYMBOL",
+                   ont           = "BP", # Biological Process. You can change to MF or CC
+                   pvalueCutoff = 0.05,
+                   pAdjustMethod = "BH",
+                   qvalueCutoff  = 0.1,
+                   readable      = FALSE,
+                   pool = FALSE)
+
+# Visualization
+dotplot(ego_npscout)
+
+
+head(ego_npscout)
+
+
+#GO Enrichment analysis of DD neat plasma from scouting methods
+ego_ddscout <- enrichGO(gene         = gene_symbols_ddscout$hgnc_symbol,
+                   OrgDb         = org.Hs.eg.db,
+                   keyType       = "SYMBOL",
+                   ont           = "BP", # Biological Process. You can change to MF or CC
+                   pvalueCutoff = 0.05,
+                   pAdjustMethod = "BH",
+                   qvalueCutoff  = 0.1,
+                   readable      = FALSE,
+                   pool = FALSE)
+
+head(ego_ddscout,n = -1)
+
+# Visualization
+dotplot(ego_ddscout)
+
+
+# GO Enrichment analysis of NPs from targeted methods
+ego_np <- enrichGO(gene         = gene_symbols_np$hgnc_symbol,
+                OrgDb         = org.Hs.eg.db,
+                keyType       = "SYMBOL",
+                ont           = "BP", # Biological Process. You can change to MF or CC
+                pvalueCutoff = 0.05,
+                pAdjustMethod = "BH",
+                qvalueCutoff  = 0.1,
+                readable      = FALSE,
+                pool = FALSE)
+
+# Visualization
+dotplot(ego_np)
+
+# GO Enrichment analysis of DD neat plasma from scouting methods
+ego_dd <- enrichGO(gene         = gene_symbols_dd$hgnc_symbol,
+                OrgDb         = org.Hs.eg.db,
+                keyType       = "SYMBOL",
+                ont           = "BP", # Biological Process. You can change to MF or CC
+                pvalueCutoff = 0.05,
+                pAdjustMethod = "BH",
+                qvalueCutoff  = 0.1,
+                readable      = FALSE,
+                pool = FALSE)
+
+# Visualization
+dotplot(ego_dd)
+
+
+
+
+
+
+
+# For KEGG enrichment analysis starts here
+
+gene_list_entrez_np <- mapIds(org.Hs.eg.db, keys=gene_symbols_np$hgnc_symbol, column="ENTREZID", keytype="SYMBOL", multiVals="first")
+gene_list_entrez_dd <- mapIds(org.Hs.eg.db, keys=gene_symbols_dd$hgnc_symbol, column="ENTREZID", keytype="SYMBOL", multiVals="first")
+
+gene_list_entrez_npscout <- mapIds(org.Hs.eg.db, keys=gene_symbols_npscout$hgnc_symbol, column="ENTREZID", keytype="SYMBOL", multiVals="first")
+gene_list_entrez_ddscout <- mapIds(org.Hs.eg.db, keys=gene_symbols_ddscout$hgnc_symbol, column="ENTREZID", keytype="SYMBOL", multiVals="first")
+
+gene_list_entrez_DISPA <- mapIds(org.Hs.eg.db, keys=gene_symbols_DISPA$hgnc_symbol, column="ENTREZID", keytype="SYMBOL", multiVals="first")
+gene_list_entrez_LC <- mapIds(org.Hs.eg.db, keys=gene_symbols_LC$hgnc_symbol, column="ENTREZID", keytype="SYMBOL", multiVals="first")
+
+gene_list_entrez1<-gene_list_entrez_DISPA 
+gene_list_entrez2<-gene_list_entrez_LC
+  
+# Extract only the Entrez IDs to a vector
+entrez_vector1 <- unname(gene_list_entrez1)
+entrez_vector2 <- unname(gene_list_entrez2)
+
+
+# Convert the vector to a list
+entrez_list1 <- as.list(entrez_vector1)
+entrez_list2 <- as.list(entrez_vector2)
+
+
+nested_list <- list(DISPA=entrez_list1, LC=entrez_list2)
+str(nested_list)
+
+transformed_list <- lapply(nested_list, unlist)
+str(transformed_list)
+
+lapply(transformed_list, head)
+
+# For KEGG enrichment analysis targeted methods, NPs:
+ekg_np <- enrichKEGG(gene         = gene_list_entrez_np,
+                  organism     = 'hsa', 
+                  keyType      = 'kegg',
+                  pAdjustMethod = 'BH',
+                  pvalueCutoff = 0.05,
+                  qvalueCutoff = 0.2)
+# Visualization
+dotplot(ekg_np)
+
+# For KEGG enrichment analysis non-targeted methods, dd neat plasma:
+ekg_dd <- enrichKEGG(gene         = gene_list_entrez_dd,
+                     organism     = 'hsa', 
+                     keyType      = 'kegg',
+                     pAdjustMethod = 'BH',
+                     pvalueCutoff = 0.05,
+                     qvalueCutoff = 0.2)
+# Visualization
+dotplot(ekg_dd)
+
+
+result <- compareCluster(transformed_list, 
+                         fun="enrichKEGG",
+                         organism = 'hsa',
+                         pvalueCutoff = 0.05)
+
+
+
+# Visualization of cluster map KEGG
+
+dotplot(result, showCategory=8, font.size=14) +
+  theme(axis.title=element_text(size=14), 
+        title=element_text(size=16))
+
+
+
+
+
+# For KEGG enrichment analysis targeted methods, NPs:
+ekg_np <- enrichKEGG(gene         = gene_list_entrez_np,
+                     organism     = 'hsa', 
+                     keyType      = 'kegg',
+                     pAdjustMethod = 'BH',
+                     pvalueCutoff = 0.05,
+                     qvalueCutoff = 0.2)
+# Visualization
+dotplot(ekg_np)
+
+# For KEGG enrichment analysis non-targeted methods, dd neat plasma:
+ekg_dd <- enrichKEGG(gene         = gene_list_entrez_dd,
+                     organism     = 'hsa', 
+                     keyType      = 'kegg',
+                     pAdjustMethod = 'BH',
+                     pvalueCutoff = 0.05,
+                     qvalueCutoff = 0.2)
+# Visualization
+dotplot(ekg_dd)
+
+
+### GO analysis for DD and each NP of targeted DISPA results ###
+
+# Extract the UniProt IDs into a vector
+uniprot_ids_np1 <- df$np1
+uniprot_ids_np2 <- df$np2
+uniprot_ids_np3 <- df$np3
+uniprot_ids_np4 <- df$np4
+uniprot_ids_np5 <- df$np5
+uniprot_ids_dd <- df$dd_pro
+
+
+# convert uniprot IDs to gene sysbols 
+gene_symbols_np1 <- getBM(attributes=c('uniprotswissprot', 'hgnc_symbol'), 
+                         filters = 'uniprotswissprot', 
+                         values = uniprot_ids_np1, 
+                         mart = ensembl)
+gene_symbols_np2 <- getBM(attributes=c('uniprotswissprot', 'hgnc_symbol'), 
+                          filters = 'uniprotswissprot', 
+                          values = uniprot_ids_np2, 
+                          mart = ensembl)
+gene_symbols_np3 <- getBM(attributes=c('uniprotswissprot', 'hgnc_symbol'), 
+                          filters = 'uniprotswissprot', 
+                          values = uniprot_ids_np3, 
+                          mart = ensembl)
+gene_symbols_np4 <- getBM(attributes=c('uniprotswissprot', 'hgnc_symbol'), 
+                          filters = 'uniprotswissprot', 
+                          values = uniprot_ids_np4, 
+                          mart = ensembl)
+gene_symbols_np5 <- getBM(attributes=c('uniprotswissprot', 'hgnc_symbol'), 
+                          filters = 'uniprotswissprot', 
+                          values = uniprot_ids_np5, 
+                          mart = ensembl)
+gene_symbols_dd <- getBM(attributes=c('uniprotswissprot', 'hgnc_symbol'), 
+                         filters = 'uniprotswissprot', 
+                         values = uniprot_ids_dd, 
+                         mart = ensembl)
+
+
+
+# Extract only the Entrez IDs to a vector
+symbols_vector_np1 <- unname(gene_symbols_np1$hgnc_symbol)
+symbols_vector_np2 <- unname(gene_symbols_np2$hgnc_symbol)
+symbols_vector_np3 <- unname(gene_symbols_np3$hgnc_symbol)
+symbols_vector_np4 <- unname(gene_symbols_np4$hgnc_symbol)
+symbols_vector_np5 <- unname(gene_symbols_np5$hgnc_symbol)
+symbols_vector_dd <- unname(gene_symbols_dd$hgnc_symbol)
+
+
+# Convert the vector to a list
+symbols_list_np1 <- as.list(symbols_vector_np1)
+symbols_list_np2 <- as.list(symbols_vector_np2)
+symbols_list_np3 <- as.list(symbols_vector_np3)
+symbols_list_np4 <- as.list(symbols_vector_np4)
+symbols_list_np5 <- as.list(symbols_vector_np5)
+symbols_list_dd <- as.list(symbols_vector_dd)
+
+nested_list_symbols_all <- list(DD=symbols_list_dd, NP1=symbols_list_np1,NP2=symbols_list_np2,
+                            NP3=symbols_list_np3,NP4=symbols_list_np4,NP5=symbols_list_np5)
+#str(nested_list_symbols)
+
+
+transformed_list_symbols_all <- lapply(nested_list_symbols_all, unlist)
+str(transformed_list_symbols_all)
+
+lapply(transformed_list_symbols_all, head)
+
+
+#GO Enrichment analysis of each NP from targeted methods
+
+go_np1 <- enrichGO(gene         = gene_symbols_np1$hgnc_symbol,
+                        OrgDb         = org.Hs.eg.db,
+                        keyType       = "SYMBOL",
+                        ont           = "BP", # Biological Process. You can change to MF or CC
+                        pvalueCutoff = 0.05,
+                        pAdjustMethod = "BH",
+                        qvalueCutoff  = 0.1,
+                        readable      = FALSE,
+                        pool = FALSE)
+go_np2 <- enrichGO(gene         = gene_symbols_np2$hgnc_symbol,
+                   OrgDb         = org.Hs.eg.db,
+                   keyType       = "SYMBOL",
+                   ont           = "BP", # Biological Process. You can change to MF or CC
+                   pvalueCutoff = 0.05,
+                   pAdjustMethod = "BH",
+                   qvalueCutoff  = 0.1,
+                   readable      = FALSE,
+                   pool = FALSE)
+go_np3 <- enrichGO(gene         = gene_symbols_np3$hgnc_symbol,
+                   OrgDb         = org.Hs.eg.db,
+                   keyType       = "SYMBOL",
+                   ont           = "BP", # Biological Process. You can change to MF or CC
+                   pvalueCutoff = 0.05,
+                   pAdjustMethod = "BH",
+                   qvalueCutoff  = 0.1,
+                   readable      = FALSE,
+                   pool = FALSE)
+go_np4 <- enrichGO(gene         = gene_symbols_np4$hgnc_symbol,
+                   OrgDb         = org.Hs.eg.db,
+                   keyType       = "SYMBOL",
+                   ont           = "BP", # Biological Process. You can change to MF or CC
+                   pvalueCutoff = 0.05,
+                   pAdjustMethod = "BH",
+                   qvalueCutoff  = 0.1,
+                   readable      = FALSE,
+                   pool = FALSE)
+go_np5 <- enrichGO(gene         = gene_symbols_np5$hgnc_symbol,
+                   OrgDb         = org.Hs.eg.db,
+                   keyType       = "SYMBOL",
+                   ont           = "BP", # Biological Process. You can change to MF or CC
+                   pvalueCutoff = 0.05,
+                   pAdjustMethod = "BH",
+                   qvalueCutoff  = 0.1,
+                   readable      = FALSE,
+                   pool = FALSE)
+go_dd <- enrichGO(gene         = gene_symbols_dd$hgnc_symbol,
+                   OrgDb         = org.Hs.eg.db,
+                   keyType       = "SYMBOL",
+                   ont           = "BP", # Biological Process. You can change to MF or CC
+                   pvalueCutoff = 0.05,
+                   pAdjustMethod = "BH",
+                   qvalueCutoff  = 0.1,
+                   readable      = FALSE,
+                   pool = FALSE)
+
+
+head(go_np1)  
+
+
+
+
+
+#GO Enrichment analysis of all NPs from targeted methods
+
+result_all <- compareCluster(transformed_list_symbols_all,
+                          fun="enrichGO", 
+                          OrgDb="org.Hs.eg.db", 
+                          ont="BP", 
+                          pAdjustMethod="BH", 
+                          pvalueCutoff=0.05, 
+                          qvalueCutoff=0.1, 
+                          universe=NULL,
+                          keyType="SYMBOL")
+
+head(result_all)
+
+
+result_all_dataframe <- result_all
+
+# Save the enrichment results to a CSV file
+write.csv(result_all_dataframe, file = "F:\\Seer_project\\R_data\\result_all_dataframe.csv", row.names = FALSE)
+
+
+
+
+
+# Visualization of cluster map GO
+
+dotplot(result_all,  font.size=12, showCategory=8) +
+  theme(axis.title=element_text(size=14), 
+        title=element_text(size=16))
+
+### KEGG analysis for DD and each NP of targeted DISPA results ###
+
+gene_list_entrez_np1 <- mapIds(org.Hs.eg.db, keys=gene_symbols_np1$hgnc_symbol, column="ENTREZID", keytype="SYMBOL", multiVals="first")
+gene_list_entrez_np2 <- mapIds(org.Hs.eg.db, keys=gene_symbols_np2$hgnc_symbol, column="ENTREZID", keytype="SYMBOL", multiVals="first")
+gene_list_entrez_np3 <- mapIds(org.Hs.eg.db, keys=gene_symbols_np3$hgnc_symbol, column="ENTREZID", keytype="SYMBOL", multiVals="first")
+gene_list_entrez_np4 <- mapIds(org.Hs.eg.db, keys=gene_symbols_np4$hgnc_symbol, column="ENTREZID", keytype="SYMBOL", multiVals="first")
+gene_list_entrez_np5 <- mapIds(org.Hs.eg.db, keys=gene_symbols_np5$hgnc_symbol, column="ENTREZID", keytype="SYMBOL", multiVals="first")
+gene_list_entrez_dd <- mapIds(org.Hs.eg.db, keys=gene_symbols_dd$hgnc_symbol, column="ENTREZID", keytype="SYMBOL", multiVals="first")
+
+
+gene_list_entrez_np1 <- gene_list_entrez_np1
+gene_list_entrez_np2 <- gene_list_entrez_np2
+gene_list_entrez_np3 <- gene_list_entrez_np3
+gene_list_entrez_np4 <- gene_list_entrez_np4
+gene_list_entrez_np5 <- gene_list_entrez_np5
+gene_list_entrez_dd <- gene_list_entrez_dd
+
+
+
+# Extract only the Entrez IDs to a vector
+entrez_vector_np1 <- unname(gene_list_entrez_np1)
+entrez_vector_np2 <- unname(gene_list_entrez_np2)
+entrez_vector_np3 <- unname(gene_list_entrez_np3)
+entrez_vector_np4 <- unname(gene_list_entrez_np4)
+entrez_vector_np5 <- unname(gene_list_entrez_np5)
+entrez_vector_dd <- unname(gene_list_entrez_dd)
+
+# Convert the vector to a list
+entrez_list_np1 <- as.list(entrez_vector_np1)
+entrez_list_np2 <- as.list(entrez_vector_np2)
+entrez_list_np3 <- as.list(entrez_vector_np3)
+entrez_list_np4 <- as.list(entrez_vector_np4)
+entrez_list_np5 <- as.list(entrez_vector_np5)
+entrez_list_dd <- as.list(entrez_vector_dd)
+
+#######
+
+nested_list_all_entrez  <- list(DD=entrez_list_dd, NP1=entrez_list_np1,NP2=entrez_list_np2,
+                                NP3=entrez_list_np3,NP4=entrez_list_np4,NP5=entrez_list_np5)
+#str(nested_list)
+
+transformed_list_all_entrez <- lapply(nested_list_all_entrez , unlist)
+str(transformed_list_all_entrez)
+
+lapply(transformed_list_all_entrez, head)
+
+
+
+result4 <- compareCluster(transformed_list_all_entrez, 
+                         fun="enrichKEGG",
+                         organism = 'hsa',
+                         pvalueCutoff = 0.05)
+
+
+
+
+# Visualization of cluster map KEGG
+
+dotplot(result4,  font.size=12, showCategory=10) +
+  theme(axis.title=element_text(size=14), 
+        title=element_text(size=16))
